@@ -10,8 +10,10 @@ export type Card = {
   topic: string;
   q: string;
   a: string;
-  options?: string[];
-  correct?: number;
+  /** Folienausschnitt unter /public/slides, ohne Endung */
+  img?: string;
+  /** Begriffe, die im Ausfüllmodus eingetippt werden */
+  blanks?: string[];
 };
 
 export type ExamPart = {
@@ -26,13 +28,6 @@ export type ExamCase = {
   intro: string;
   parts: ExamPart[];
 };
-
-export const STATUS = {
-  NEW: 0,
-  WEAK: 1,
-  SHAKY: 2,
-  SOLID: 3,
-} as const;
 
 export type ProgressRow = {
   card_id: string;

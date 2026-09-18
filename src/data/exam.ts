@@ -1,0 +1,50 @@
+import type { ExamCase } from "@/lib/types";
+
+export const EXAM: ExamCase[] = [
+  {
+    ch: 1,
+    title: "RDBMS – Anomalien / Non Repeatable Read",
+    intro:
+      "Relationale Datenbanken (RDBMS) sind seit den 1970er Jahren im Einsatz, um große Daten strukturiert zu speichern und analysieren zu können.",
+    parts: [
+      {
+        level: "Reproduktion",
+        q: "Beschreiben Sie den Begriff der „Transaktion“ in relationalen Datenbanken und deren erwünschte Eigenschaften.",
+        a: "<b>Transaktion</b>: eine feste Folge von Operationen, die als <b>eine logische Einheit</b> betrachtet wird. Sie wird entweder vollständig ausgeführt oder vollständig zurückgerollt (Rollback), um die Datenintegrität zu wahren. Klassisches Beispiel ist die Überweisung: Abbuchung von Konto A und Gutschrift auf Konto B müssen gemeinsam gelingen – sonst verschwindet das Geld im „Nichts“ und die Datenbank bleibt in einem inkonsistenten Zustand.<br><br><b>Erwünschte Eigenschaften = ACID</b><br>• <b>Atomarität</b> – die Transaktion wird ganz oder gar nicht ausgeführt<br>• <b>Konsistenz</b> – sie überführt die DB von einem konsistenten in einen anderen konsistenten Zustand; alle Primär- und Fremdschlüssel sind danach gültig<br>• <b>Isolation</b> – gleichzeitig laufende Transaktionen beeinflussen sich nicht; realisiert über Sperrprotokolle oder Zeitstempelverfahren<br>• <b>Dauerhaftigkeit</b> – nach dem Commit sind die Daten auch bei einem Systemabsturz vorhanden",
+      },
+      {
+        level: "Transfer",
+        q: "Erläutern Sie, was Anomalien im Zusammenhang mit RDBMS-Transaktionen sind und wie diese z.B. in MySQL in der Praxis verhindert werden.",
+        a: "<b>Anomalien</b> sind Probleme, die bei gleichzeitigen Zugriffen mehrerer Transaktionen auftreten können:<br>• <b>Dirty Read</b> – eine Transaktion liest Daten, die eine andere geändert, aber noch nicht committed hat. Kommt danach ein Rollback, wurde mit einem Wert gearbeitet, den es nie gab.<br>• <b>Non Repeatable Read</b> – derselbe Datensatz liefert beim zweiten Lesen innerhalb einer Transaktion einen anderen Wert, weil eine andere Transaktion ihn geändert und committed hat.<br>• <b>Phantom Read</b> – eine Ergebnismenge wächst beim erneuten Lesen, weil eine andere Transaktion passende Zeilen eingefügt hat.<br><br><b>Verhindert werden sie über die Isolationslevel</b>: READ UNCOMMITTED (alle Anomalien möglich) → READ COMMITTED (kein Dirty Read) → REPEATABLE READ (zusätzlich kein Non Repeatable Read) → SERIALIZABLE (keine der drei Anomalien, die Transaktionen laufen wie seriell).<br>In der Praxis setzt man das Level per <code>SET GLOBAL TRANSACTION ISOLATION LEVEL …</code>. <b>MySQL verwendet standardmäßig REPEATABLE READ</b>, Oracle READ COMMITTED. Technisch wird das über Sperren bzw. Multiversion Concurrency Control umgesetzt.<br><b>Der Preis</b>: Je höher das Level, desto mehr Konsistenz, aber desto weniger Parallelität – SERIALIZABLE funktioniert nur bei geringer Last, sonst entstehen zu viele und zu lange Sperren.",
+      },
+      {
+        level: "Reflexion",
+        q: "Begründen Sie, wie es zur Anomalie „Non Repeatable Read“ kommt, bewerten Sie die Auswirkungen für Transaktion 2 und entwerfen Sie einen Lösungsansatz.",
+        a: "<b>Entstehung</b>: Transaktion 2 startet und liest einen Datensatz, z.B. <code>SELECT * FROM users WHERE id=3</code> → username = „test“. Danach ändert Transaktion 1 denselben Satz (<code>UPDATE users SET username=\"xcode\" WHERE id=3</code>) und führt ein <b>Commit</b> aus. Liest Transaktion 2 anschließend – immer noch innerhalb derselben Transaktion – erneut, erhält sie „xcode“. Möglich ist das bei <b>READ COMMITTED</b>, weil dieses Level nur gegen Dirty Reads schützt, aber keine Lesesperre über die gesamte Transaktion hält.<br><br><b>Auswirkung für Transaktion 2</b>: Sie arbeitet innerhalb <i>einer</i> logischen Einheit mit <b>zwei widersprüchlichen Werten</b>. Berechnungen, Prüfungen und Ausgaben werden dadurch inkonsistent – eine Bedingung kann zuerst als erfüllt und danach als nicht erfüllt bewertet werden. Das Ergebnis der Transaktion ist <b>nicht reproduzierbar</b> und damit fachlich nicht nachvollziehbar. Bei Summen- oder Saldenberechnungen können falsche Werte entstehen und persistiert werden.<br><br><b>Lösungsansätze</b>:<br>1) <b>Isolationslevel auf REPEATABLE READ anheben</b> – Transaktion 2 sieht die Daten dann so, wie sie zu Beginn ihrer Transaktion waren; mehrfaches Lesen liefert immer den gleichen Wert. Das ist in MySQL ohnehin der Standard.<br>2) Wird zusätzlich Schutz vor <b>Phantom Reads</b> benötigt, SERIALIZABLE – allerdings mit deutlichem Performanceverlust durch Sperren.<br>3) Alternativ gezielte <b>Lesesperren</b> setzen (<code>SELECT … FOR UPDATE</code>), sodass der Satz für die Dauer der Transaktion gesperrt ist.<br>4) Transaktionen <b>kurz halten</b> und nur die wirklich nötigen Daten einschließen, damit weniger Kollisionen entstehen.<br><b>Abwägung</b>: Jede dieser Maßnahmen erhöht die Konsistenz auf Kosten der Parallelität – man wählt das niedrigste Level, das die fachliche Anforderung noch erfüllt.",
+      },
+    ],
+  },
+  {
+    ch: 6,
+    title: "Datenanalyse – Verfahren Anwendung",
+    intro:
+      "Die Verfahren der Datenanalyse geben einen Überblick, wie der Prozess für die Auswertung der gesammelten Daten durchgeführt werden kann.",
+    parts: [
+      {
+        level: "Reproduktion",
+        q: "Definieren Sie den Begriff „Descriptive Analytics“ im Kontext der Datenanalyse-Verfahren und geben Sie ein Anwendungsbeispiel dazu an.",
+        a: "<b>Descriptive Analytics</b> (deskriptive bzw. beschreibende Datenanalyse) ist die erste und einfachste der vier Stufen im Analytics-Reifegradmodell von Gartner. Sie betrachtet <b>Daten aus der Vergangenheit</b> und beantwortet die Frage <b>„Was ist passiert?“</b>. Typische Datenquelle sind Logfiles. Sie bildet die Grundlage für alle weiteren Stufen.<br><br><b>Anwendungsbeispiele</b>:<br>• Eine Gesundheitseinrichtung erfährt, wie viele Patienten im letzten Monat stationär aufgenommen wurden.<br>• Ein Händler ermittelt, wie hoch der durchschnittliche Umsatz pro Woche ist.<br>• Ein Hersteller zählt, wie viele Artikel im letzten Monat zurückgegeben wurden.<br>• Eine Bank erkennt durch die Analyse der Kreditausfalldaten, welche Faktoren die Zahlungsausfälle begünstigt haben.",
+      },
+      {
+        level: "Transfer",
+        q: "Erörtern Sie, was die Machine-Learning-Grafik darstellt, erläutern Sie, was unter „Data Cleaning“ verstanden wird, und erklären Sie das anhand eines konkreten Falles.",
+        a: "<b>Die Grafik</b> zeigt, wie Machine Learning funktioniert – getrennt in Trainings- und Anwendungsphase.<br><b>Training</b>: Links gehen <b>Merkmale</b> und die <b>Zielvariable</b> in das <b>Modelltraining</b>. Dort werden Zusammenhänge, Muster, Abhängigkeiten und verborgene Strukturen gefunden. Ergebnis ist die <b>KI-Software – das „Modell“</b>.<br><b>Anwendung</b>: In dieses Modell fließen die <b>neuen Daten</b>; heraus kommt die <b>Vorhersage</b>, etwa Affinität, Umsatz oder Kaufwahrscheinlichkeit.<br>Wichtig ist, dass die Beispiele nicht auswendig gelernt, sondern verallgemeinert werden (Lerntransfer) – gelingt das nicht, spricht man von Überanpassung (Overfitting). Trainings- und Testdaten werden deshalb getrennt gehalten.<br><br><b>Data Cleaning</b> ist die Bereinigung der Rohdaten, bevor sie ins Training gehen: fehlende Werte ergänzen oder entfernen, Duplikate löschen, Formate und Schreibweisen vereinheitlichen, falsche Werte und Ausreißer behandeln. Ohne diesen Schritt lernt das Modell aus fehlerhaften Daten.<br><br><b>Konkreter Fall</b>: In einer Kundendatei steht das Datum mal als 01.02.2024, mal als 2024-02-01. Das Bundesland ist mal mit „Vbg“, mal mit „Vorarlberg“ erfasst. Bei einigen Datensätzen fehlt das Alter, bei einem steht der Wert 999. Beim Cleaning werden die Datumsformate vereinheitlicht, die Schreibweisen zusammengeführt, fehlende Alter durch den Mittelwert ersetzt oder die Sätze entfernt und der unmögliche Wert 999 korrigiert. Erst danach liefern Gruppierungen nach Bundesland und Durchschnittsberechnungen über das Alter brauchbare Ergebnisse.",
+      },
+      {
+        level: "Reflexion",
+        q: "Die Stadt Wien veröffentlicht Zahlen zu Grippe-Neuerkrankungen pro Kalenderwoche. Prüfen Sie, welche Daten dafür benötigt wurden und woher sie stammen. Um welches Datenanalyse-Verfahren nach Gartner handelt es sich? Welche weiteren Möglichkeiten hätte die Stadt Wien?",
+        a: "<b>Benötigte Daten</b>: die Anzahl der Neuerkrankungen je Kalenderwoche – also Meldedatum bzw. Kalenderwoche, Fallzahl, der Bezugsraum (Stadt Wien) und der betrachtete Zeitraum der Grippesaison. Für Inzidenzen zusätzlich die Bevölkerungszahl.<br><b>Mögliche Quellen</b>: Meldungen niedergelassener Ärztinnen und Ärzte sowie der Ambulanzen an den Grippemeldedienst, Labordaten zu bestätigten Fällen, Aufnahmedaten der Krankenhäuser und Daten der Krankenkassen zu Krankenständen.<br><br><b>Verfahren nach Gartner</b>: <b>Descriptive Analytics</b>. Die Statistik beschreibt, was in der Vergangenheit passiert ist – die Fallzahlen je Kalenderwoche –, ohne nach Ursachen zu fragen oder eine Prognose zu stellen.<br><br><b>Weitere Möglichkeiten und ihr Zweck</b>:<br>• <b>Diagnostic Analytics</b>: Warum war der Anstieg in dieser Saison so stark? Vergleich mit den Vorjahren, mit Wetterdaten, Impfquote, Schulferien oder Virusvarianten – also eine Kausalanalyse.<br>• <b>Predictive Analytics</b>: Vorhersage des weiteren Saisonverlaufs und des Höhepunkts aus den historischen Daten. Damit lassen sich Personal, Betten und Impfstoffmengen rechtzeitig planen.<br>• <b>Prescriptive Analytics</b>: automatisch ausgelöste Maßnahmen – Impfkampagnen starten, Ressourcen zwischen Spitälern umverteilen, Warnungen ausgeben.<br><br><b>Bezweckt</b> wird damit insgesamt: die frühzeitige Erkennung von Grippewellen, ein gezielter Ressourceneinsatz im Gesundheitssystem, die Bewertung der Wirksamkeit von Impfkampagnen und die Information der Bevölkerung.",
+      },
+    ],
+  },
+];

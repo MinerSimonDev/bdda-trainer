@@ -7,11 +7,25 @@ export function statusOf(progress: ProgressMap, id: string): number {
   return progress[id]?.status ?? 0;
 }
 
-export function poolFor(chapters: number[], onlyMc = false): Card[] {
-  let pool = CARDS;
-  if (chapters.length) pool = pool.filter((c) => chapters.includes(c.ch));
-  if (onlyMc) pool = pool.filter((c) => c.options && c.options.length > 1);
-  return pool;
+export function poolFor(chapters: number[]): Card[] {
+  if (!chapters.length) return CARDS;
+  return CARDS.filter((c) => chapters.includes(c.ch));
+}
+
+/** Tippfehler-tolerant: Groß/Klein, Bindestriche und Leerzeichen egal. */
+export function matchesBlank(input: string, expected: string): boolean {
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[\s\-_.()]/g, "")
+      .replace(/ä/g, "a")
+      .replace(/ö/g, "o")
+      .replace(/ü/g, "u")
+      .replace(/ß/g, "ss");
+  const a = norm(input);
+  const b = norm(expected);
+  if (!a) return false;
+  return a === b || (a.length >= 4 && b.startsWith(a)) || b.includes(a) && a.length >= 5;
 }
 
 export function buildQueue(

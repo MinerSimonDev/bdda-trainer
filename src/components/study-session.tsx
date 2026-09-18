@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/button-link";
 import { Card } from "@/components/ui/card";
 import { ChapterPicker } from "@/components/chapter-picker";
+import { BlankFill } from "@/components/blank-fill";
+import { SlideImage } from "@/components/slide-image";
 import { CHAPTERS } from "@/data/cards";
 import { buildQueue, nextStatus, poolFor, statusOf } from "@/lib/study";
 import { recordAnswer, logSession } from "@/lib/actions";
@@ -33,8 +34,7 @@ export function StudySession({
   const available = useMemo(() => poolFor(chapters).length, [chapters]);
 
   const start = useCallback(() => {
-    const pool = poolFor(chapters);
-    setQueue(buildQueue(pool, progress, length));
+    setQueue(buildQueue(poolFor(chapters), progress, length));
     setIndex(0);
     setRevealed(false);
     setTally({ good: 0, half: 0, bad: 0 });
@@ -74,8 +74,9 @@ export function StudySession({
   useEffect(() => {
     if (!card) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.tagName === "INPUT") return;
-      if (!revealed && (e.code === "Space" || e.code === "Enter")) {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+      if (!revealed && (e.code === "Space" || e.key === " " || e.key === "Enter")) {
         e.preventDefault();
         setRevealed(true);
         return;
@@ -91,6 +92,8 @@ export function StudySession({
   }, [card, revealed, grade]);
 
   if (queue === null) {
+    const withBlanks = poolFor(chapters).filter((c) => c.blanks?.length).length;
+    const withImg = poolFor(chapters).filter((c) => c.img).length;
     return (
       <div className="space-y-6">
         <div>
@@ -131,12 +134,13 @@ export function StudySession({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Button size="lg" onClick={start} disabled={!available}>
+        <div className="flex flex-wrap items-center gap-4">
+          <Button size="lg" className="h-11 px-5" onClick={start} disabled={!available}>
             Los geht&apos;s
           </Button>
           <span className="text-sm text-muted-foreground tabular-nums">
-            {available} Karten im Pool
+            {available} Karten im Pool · {withBlanks} mit Ausfüllübung ·{" "}
+            {withImg} mit Folie
           </span>
         </div>
       </div>
@@ -144,13 +148,12 @@ export function StudySession({
   }
 
   if (done) {
-    const total = queue.length;
     return (
       <div className="mx-auto max-w-lg space-y-6 py-6 text-center">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Runde fertig</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {total} Karten durchgearbeitet.
+            {queue.length} Karten durchgearbeitet.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -159,17 +162,22 @@ export function StudySession({
           <Score label="Nicht" value={tally.bad} className="text-bad" />
         </div>
         <div className="flex justify-center gap-2">
-          <Button onClick={start}>Nochmal</Button>
-          <Button variant="outline" onClick={() => setQueue(null)}>
+          <Button className="h-10 px-4" onClick={start}>
+            Nochmal
+          </Button>
+          <Button variant="outline" className="h-10 px-4" onClick={() => setQueue(null)}>
             Einstellungen
           </Button>
-          <ButtonLink href="/" variant="ghost">Übersicht</ButtonLink>
+          <ButtonLink href="/" variant="ghost">
+            Übersicht
+          </ButtonLink>
         </div>
       </div>
     );
   }
 
   const chapter = CHAPTERS.find((c) => c.id === card!.ch);
+  const hasBlanks = !!card!.blanks?.length;
 
   return (
     <div className="space-y-5">
@@ -192,8 +200,8 @@ export function StudySession({
         </span>
       </div>
 
-      <Card className="min-h-[22rem] gap-5 p-6 sm:p-8">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <Card className="gap-5 p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="rounded bg-muted px-2 py-0.5 font-medium">
             {chapter?.name}
           </span>
@@ -206,25 +214,36 @@ export function StudySession({
           dangerouslySetInnerHTML={{ __html: card!.q }}
         />
 
-        {revealed ? (
-          <div
-            className="prose-card space-y-2 border-t pt-5 text-[15px] leading-relaxed text-muted-foreground"
-            dangerouslySetInnerHTML={{ __html: card!.a }}
+        {!revealed && hasBlanks && (
+          <BlankFill
+            cardId={card!.id}
+            blanks={card!.blanks!}
+            onDone={() => undefined}
           />
-        ) : (
-          <div className="flex flex-1 items-end">
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full"
-              onClick={() => setRevealed(true)}
-            >
-              Antwort zeigen
-              <kbd className="ml-2 rounded border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                Leertaste
-              </kbd>
-            </Button>
+        )}
+
+        {revealed ? (
+          <div className="space-y-4 border-t pt-5">
+            <div
+              className="prose-card text-[15px] leading-relaxed text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: card!.a }}
+            />
+            {card!.img && (
+              <SlideImage src={card!.img} alt={`Folie zu ${card!.topic}`} />
+            )}
           </div>
+        ) : (
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-12 w-full"
+            onClick={() => setRevealed(true)}
+          >
+            Antwort zeigen
+            <kbd className="ml-2 rounded border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              Leertaste
+            </kbd>
+          </Button>
         )}
       </Card>
 
