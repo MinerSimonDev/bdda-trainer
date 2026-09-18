@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ChapterPicker } from "@/components/chapter-picker";
 import { BlankFill } from "@/components/blank-fill";
 import { SlideImage } from "@/components/slide-image";
+import { ResetProgress } from "@/components/reset-progress";
 import { CHAPTERS } from "@/data/cards";
 import { buildQueue, nextStatus, poolFor, statusOf } from "@/lib/study";
 import { recordAnswer, logSession } from "@/lib/actions";
@@ -28,7 +29,7 @@ export function StudySession({
   const [length, setLength] = useState(20);
   const [queue, setQueue] = useState<CardType[] | null>(null);
   const [index, setIndex] = useState(0);
-  const [revealed, setRevealed] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const [tally, setTally] = useState({ good: 0, half: 0, bad: 0 });
 
   const available = useMemo(() => poolFor(chapters).length, [chapters]);
@@ -36,7 +37,7 @@ export function StudySession({
   const start = useCallback(() => {
     setQueue(buildQueue(poolFor(chapters), progress, length));
     setIndex(0);
-    setRevealed(false);
+    setFlipped(false);
     setTally({ good: 0, half: 0, bad: 0 });
   }, [chapters, length, progress]);
 
@@ -58,7 +59,7 @@ export function StudySession({
       }));
       setTally((t) => ({ ...t, [g]: t[g] + 1 }));
       void recordAnswer(card.id, status, g === "good");
-      setRevealed(false);
+      setFlipped(false);
       setIndex((i) => i + 1);
     },
     [card, progress]
@@ -76,24 +77,28 @@ export function StudySession({
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
-      if (!revealed && (e.code === "Space" || e.key === " " || e.key === "Enter")) {
+      if (e.code === "Space" || e.key === " ") {
         e.preventDefault();
-        setRevealed(true);
+        setFlipped((f) => !f);
         return;
       }
-      if (revealed) {
-        if (e.key === "1") grade("bad");
-        if (e.key === "2") grade("half");
-        if (e.key === "3") grade("good");
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        grade("bad");
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        grade("good");
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        grade("half");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [card, revealed, grade]);
+  }, [card, grade]);
 
   if (queue === null) {
-    const withBlanks = poolFor(chapters).filter((c) => c.blanks?.length).length;
-    const withImg = poolFor(chapters).filter((c) => c.img).length;
+    const pool = poolFor(chapters);
     return (
       <div className="space-y-6">
         <div>
@@ -139,10 +144,28 @@ export function StudySession({
             Los geht&apos;s
           </Button>
           <span className="text-sm text-muted-foreground tabular-nums">
-            {available} Karten im Pool · {withBlanks} mit Ausfüllübung ·{" "}
-            {withImg} mit Folie
+            {available} Karten · {pool.filter((c) => c.img).length} mit Folie
           </span>
         </div>
+
+        <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <b className="text-foreground">Steuerung:</b> Leertaste dreht die Karte
+          um · <b className="text-bad">←</b> nicht gewusst ·{" "}
+          <b className="text-mid">↑</b> halb · <b className="text-good">→</b>{" "}
+          gewusst
+        </div>
+
+        <ResetProgress
+          chapters={chapters}
+          affected={pool.filter((c) => (progress[c.id]?.status ?? 0) > 0).length}
+          onReset={() =>
+            setProgress((p) => {
+              const next = { ...p };
+              for (const c of pool) delete next[c.id];
+              return next;
+            })
+          }
+        />
       </div>
     );
   }
@@ -180,7 +203,7 @@ export function StudySession({
   const hasBlanks = !!card!.blanks?.length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -200,60 +223,87 @@ export function StudySession({
         </span>
       </div>
 
-      <Card className="gap-5 p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="rounded bg-muted px-2 py-0.5 font-medium">
-            {chapter?.name}
-          </span>
-          <span>{card!.topic}</span>
-          <StatusPill status={statusOf(progress, card!.id)} />
-        </div>
-
-        <p
-          className="prose-card text-balance text-xl font-medium leading-snug sm:text-2xl"
-          dangerouslySetInnerHTML={{ __html: card!.q }}
-        />
-
-        {!revealed && hasBlanks && (
-          <BlankFill
-            cardId={card!.id}
-            blanks={card!.blanks!}
-            onDone={() => undefined}
-          />
-        )}
-
-        {revealed ? (
-          <div className="space-y-4 border-t pt-5">
-            <div
-              className="prose-card text-[15px] leading-relaxed text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: card!.a }}
-            />
-            {card!.img && (
-              <SlideImage src={card!.img} alt={`Folie zu ${card!.topic}`} />
-            )}
+      <div className="flip-scene">
+        <div className={`flip-card ${flipped ? "is-flipped" : ""}`}>
+          {/* Vorderseite: Frage */}
+          <div className="flip-face front" aria-hidden={flipped}>
+            <Card
+              onClick={() => setFlipped(true)}
+              className="min-h-[19rem] cursor-pointer justify-center gap-6 p-6 transition-colors hover:border-primary/40 sm:min-h-[21rem] sm:p-8"
+            >
+              <Meta chapter={chapter?.name} topic={card!.topic} status={statusOf(progress, card!.id)} />
+              <p
+                className="prose-card text-balance text-center text-xl font-medium leading-snug sm:text-2xl"
+                dangerouslySetInnerHTML={{ __html: card!.q }}
+              />
+              {hasBlanks && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <BlankFill
+                    cardId={card!.id}
+                    blanks={card!.blanks!}
+                    onDone={() => undefined}
+                  />
+                </div>
+              )}
+              <p className="text-center text-xs text-muted-foreground">
+                Leertaste oder tippen zum Umdrehen
+              </p>
+            </Card>
           </div>
-        ) : (
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-12 w-full"
-            onClick={() => setRevealed(true)}
-          >
-            Antwort zeigen
-            <kbd className="ml-2 rounded border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              Leertaste
-            </kbd>
-          </Button>
-        )}
-      </Card>
 
-      {revealed && (
-        <div className="grid grid-cols-3 gap-2">
-          <GradeButton onClick={() => grade("bad")} tone="bad" label="Nicht gewusst" hint="1" />
-          <GradeButton onClick={() => grade("half")} tone="mid" label="Halb" hint="2" />
-          <GradeButton onClick={() => grade("good")} tone="good" label="Gewusst" hint="3" />
+          {/* Rückseite: Antwort */}
+          <div className="flip-face back" aria-hidden={!flipped}>
+            <Card
+              onClick={() => setFlipped(false)}
+              className="min-h-[19rem] cursor-pointer gap-4 bg-accent/40 p-6 sm:min-h-[21rem] sm:p-8"
+            >
+              <Meta chapter={chapter?.name} topic={card!.topic} status={statusOf(progress, card!.id)} />
+              <div
+                className="prose-card text-[15px] leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: card!.a }}
+              />
+              {card!.img && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <SlideImage src={card!.img} alt={`Folie zu ${card!.topic}`} />
+                </div>
+              )}
+              <p className="mt-auto pt-2 text-center text-xs text-muted-foreground">
+                Leertaste dreht zurück
+              </p>
+            </Card>
+          </div>
         </div>
-      )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <GradeButton onClick={() => grade("bad")} tone="bad" label="Nicht gewusst" hint="←" />
+        <GradeButton onClick={() => grade("half")} tone="mid" label="Halb" hint="↑" />
+        <GradeButton onClick={() => grade("good")} tone="good" label="Gewusst" hint="→" />
+      </div>
+    </div>
+  );
+}
+
+function Meta({
+  chapter,
+  topic,
+  status,
+}: {
+  chapter?: string;
+  topic: string;
+  status: number;
+}) {
+  const map: Record<number, [string, string]> = {
+    1: ["schwach", "text-bad"],
+    2: ["wackelig", "text-mid"],
+    3: ["sitzt", "text-good"],
+  };
+  const pill = map[status];
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <span className="rounded bg-muted px-2 py-0.5 font-medium">{chapter}</span>
+      <span>{topic}</span>
+      {pill && <span className={`ml-auto font-medium ${pill[1]}`}>{pill[0]}</span>}
     </div>
   );
 }
@@ -280,21 +330,10 @@ function GradeButton({
       onClick={onClick}
       className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-3 text-sm font-medium transition-colors ${tones[tone]}`}
     >
+      <span className="text-base leading-none">{hint}</span>
       {label}
-      <span className="text-[10px] opacity-60">Taste {hint}</span>
     </button>
   );
-}
-
-function StatusPill({ status }: { status: number }) {
-  if (status === 0) return null;
-  const map: Record<number, [string, string]> = {
-    1: ["schwach", "text-bad"],
-    2: ["wackelig", "text-mid"],
-    3: ["sitzt", "text-good"],
-  };
-  const [label, cls] = map[status];
-  return <span className={`ml-auto font-medium ${cls}`}>{label}</span>;
 }
 
 function Score({

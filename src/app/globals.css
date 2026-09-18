@@ -190,3 +190,22 @@
   word-break: break-word;
 }
 .prose-card b { font-weight: 600; color: var(--foreground); }
+
+/* Karteikarte: echter Flip um die Y-Achse */
+.flip-scene { perspective: 2000px; }
+.flip-card {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.flip-card.is-flipped { transform: rotateY(180deg); }
+.flip-face {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-face.back { transform: rotateY(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-card { transition: none; }
+}

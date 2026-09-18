@@ -1,7 +1,9 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { CARDS } from "@/data/cards";
 import type { ProgressMap, ProgressRow } from "@/lib/types";
 
 export async function getProgress(): Promise<ProgressMap> {
@@ -49,14 +51,28 @@ export async function recordAnswer(
   );
 }
 
-export async function resetChapter(chapterIds: string[]) {
+/**
+ * Setzt den Fortschritt zurück: für die genannten Kapitel, oder für alles,
+ * wenn keine Kapitel übergeben werden.
+ */
+export async function resetProgress(chapters: number[]): Promise<boolean> {
   const { userId } = await auth();
-  if (!userId) return;
-  await supabaseAdmin()
-    .from("bdda_progress")
-    .delete()
-    .eq("user_id", userId)
-    .in("card_id", chapterIds);
+  if (!userId) return false;
+
+  const db = supabaseAdmin();
+  let query = db.from("bdda_progress").delete().eq("user_id", userId);
+
+  if (chapters.length) {
+    const ids = CARDS.filter((c) => chapters.includes(c.ch)).map((c) => c.id);
+    if (!ids.length) return false;
+    query = query.in("card_id", ids);
+  }
+
+  const { error } = await query;
+  if (error) return false;
+
+  revalidatePath("/");
+  return true;
 }
 
 export async function logSession(
