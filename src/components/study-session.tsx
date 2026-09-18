@@ -31,6 +31,7 @@ export function StudySession({
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [tally, setTally] = useState({ good: 0, half: 0, bad: 0 });
+  const [results, setResults] = useState<Grade[]>([]);
 
   const available = useMemo(() => poolFor(chapters).length, [chapters]);
 
@@ -39,6 +40,7 @@ export function StudySession({
     setIndex(0);
     setFlipped(false);
     setTally({ good: 0, half: 0, bad: 0 });
+    setResults([]);
   }, [chapters, length, progress]);
 
   const card = queue?.[index];
@@ -58,6 +60,7 @@ export function StudySession({
         },
       }));
       setTally((t) => ({ ...t, [g]: t[g] + 1 }));
+      setResults((r) => [...r, g]);
       void recordAnswer(card.id, status, g === "good");
       setFlipped(false);
       setIndex((i) => i + 1);
@@ -212,11 +215,21 @@ export function StudySession({
         >
           ← Abbrechen
         </button>
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${(index / queue.length) * 100}%` }}
-          />
+        <div className="flex h-2 flex-1 gap-px overflow-hidden rounded-full bg-muted">
+          {queue.map((_, i) => {
+            const r = results[i];
+            const tone =
+              r === "good"
+                ? "bg-good"
+                : r === "half"
+                  ? "bg-mid"
+                  : r === "bad"
+                    ? "bg-bad"
+                    : i === index
+                      ? "bg-primary/40"
+                      : "bg-transparent";
+            return <div key={i} className={`h-full flex-1 ${tone}`} />;
+          })}
         </div>
         <span className="text-sm text-muted-foreground tabular-nums">
           {index + 1}/{queue.length}

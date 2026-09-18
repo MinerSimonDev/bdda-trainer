@@ -44,3 +44,25 @@ export const STATUS_LABEL: Record<number, string> = {
   2: "Wackelig",
   3: "Sitzt",
 };
+
+/** Ein abzudeckendes Label auf einer Folie, Angaben in Prozent des Bildes. */
+export type LabelSpot = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label: string;
+  /** Weitere Schreibweisen, die als richtig zählen. */
+  alt?: string[];
+};
+
+export type LabelTask = {
+  id: string;
+  ch: number;
+  img: string;
+  title: string;
+  intro?: string;
+  /** Ausschnitt der Folie in Prozent — blendet Folientext aus, der die Lösung verrät. */
+  crop?: { x: number; y: number; w: number; h: number };
+  spots: LabelSpot[];
+};

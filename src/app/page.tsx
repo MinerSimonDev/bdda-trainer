@@ -102,6 +102,17 @@ export default async function Home() {
 
         <Card className="mt-6 flex-row items-center gap-4 p-4">
           <div className="min-w-0 flex-1">
+            <h3 className="font-semibold tracking-tight">Grafiken beschriften</h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              CAP-Dreieck, DWH-Architektur, Cloud-Stack, ML-Ablauf, Neuron und
+              RAG — Beschriftungen abgedeckt, selbst eintippen.
+            </p>
+          </div>
+          <ButtonLink href="/grafiken" variant="outline">Üben</ButtonLink>
+        </Card>
+
+        <Card className="mt-3 flex-row items-center gap-4 p-4">
+          <div className="min-w-0 flex-1">
             <h3 className="font-semibold tracking-tight">Prüfungssimulation</h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Originalaufgaben im Format Reproduktion · Transfer · Reflexion, mit
