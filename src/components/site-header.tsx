@@ -18,9 +18,6 @@ export async function SiteHeader() {
           <Link href="/lernen" className="rounded-md px-2 py-1.5 hover:bg-muted hover:text-foreground sm:px-2.5">
             Lernen
           </Link>
-          <Link href="/quiz" className="rounded-md px-2 py-1.5 hover:bg-muted hover:text-foreground sm:px-2.5">
-            Quiz
-          </Link>
           <Link href="/pruefung" className="rounded-md px-2 py-1.5 hover:bg-muted hover:text-foreground sm:px-2.5">
             Prüfung
           </Link>

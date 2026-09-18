@@ -53,7 +53,7 @@ export default async function Home() {
           </div>
           <div className="flex gap-2">
             <ButtonLink href="/lernen" size="lg">Schwachstellen üben</ButtonLink>
-            <ButtonLink href="/quiz" size="lg" variant="outline">Quiz</ButtonLink>
+            <ButtonLink href="/pruefung" size="lg" variant="outline">Prüfung</ButtonLink>
           </div>
         </div>
 
@@ -108,7 +108,7 @@ export default async function Home() {
               ausformulierter Musterantwort.
             </p>
           </div>
-          <ButtonLink href="/pruefung" variant="outline">Starten</ButtonLink>
+          <ButtonLink href="/pruefung" variant="outline">Öffnen</ButtonLink>
         </Card>
       </main>
     </>

@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "BDDA Trainer",
-  description: "Karteikarten, Quiz und Prüfungssimulation für die BDDA-Matura",
+  description: "Karteikarten und Prüfungssimulation für die BDDA-Matura",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
