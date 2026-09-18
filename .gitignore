@@ -42,3 +42,6 @@ next-env.d.ts
 
 # lokale Umgebung
 .env.local
+
+# Folien der HTL Dornbirn – nicht ins oeffentliche Repo
+public/slides/

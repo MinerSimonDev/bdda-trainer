@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { matchesBlank } from "@/lib/study";
 
@@ -17,18 +17,13 @@ export function BlankFill({
   const [checked, setChecked] = useState(false);
   const firstRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setValues(blanks.map(() => ""));
-    setChecked(false);
-    firstRef.current?.focus();
-  }, [cardId, blanks]);
-
   /** Jede Eingabe zählt, wenn sie zu irgendeinem noch offenen Begriff passt. */
   const resolve = () => {
     const open = blanks.map((b, i) => ({ b, i }));
-    const hitFor: (number | null)[] = values.map(() => null);
-    values.forEach((v, vi) => {
-      const found = open.findIndex((o) => o !== null && matchesBlank(v, o.b));
+    const hitFor: (number | null)[] = blanks.map(() => null);
+    blanks.forEach((_, vi) => {
+      const v = values[vi] ?? "";
+      const found = open.findIndex((o) => matchesBlank(v, o.b));
       if (found !== -1) {
         hitFor[vi] = open[found].i;
         open.splice(found, 1);
@@ -70,11 +65,16 @@ export function BlankFill({
               <input
                 ref={i === 0 ? firstRef : undefined}
                 id={`${cardId}-blank-${i}`}
-                value={values[i]}
+                value={values[i] ?? ""}
                 disabled={checked}
-                onChange={(e) =>
-                  setValues((v) => v.map((x, j) => (j === i ? e.target.value : x)))
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setValues((v) => {
+                    const next = blanks.map((_, j) => v[j] ?? "");
+                    next[i] = val;
+                    return next;
+                  });
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();

@@ -239,6 +239,7 @@ export function StudySession({
               {hasBlanks && (
                 <div onClick={(e) => e.stopPropagation()}>
                   <BlankFill
+                    key={card!.id}
                     cardId={card!.id}
                     blanks={card!.blanks!}
                     onDone={() => undefined}
