@@ -130,7 +130,7 @@ Daraus folgt für das Deployment: **nach Production wird aus dem lokalen Ordner
 deployt**, nicht aus GitHub.
 
 ```bash
-vercel deploy --prod
+npm run deploy
 ```
 
 Ein Build, den Vercel aus dem Repository zieht, kennt `public/slides/` nicht —
