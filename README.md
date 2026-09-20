@@ -125,3 +125,15 @@ sips -Z 1100 seite-15.jpg --out public/slides/cap-theorem.jpg
 ```
 
 Der Dateiname ohne Endung ist der Wert von `img` in der Karte.
+
+Daraus folgt für das Deployment: **nach Production wird aus dem lokalen Ordner
+deployt**, nicht aus GitHub.
+
+```bash
+vercel deploy --prod
+```
+
+Ein Build, den Vercel aus dem Repository zieht, kennt `public/slides/` nicht —
+die Karten stehen dann ohne Bild da und `/slides/*.jpg` liefert 404. Was mit
+hochgeladen wird, steht in `.vercelignore`; `.env*` ist dort ausgeschlossen,
+damit keine Schlüssel im Build landen.
