@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { mayGenerateExams } from "@/lib/exam-access";
 import { generateExam } from "@/lib/exam-generate";
 import { GENERATOR_POOLS } from "@/lib/exam-prompt";
 
@@ -7,6 +8,13 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Nicht angemeldet." }, { status: 401 });
+
+  if (!(await mayGenerateExams())) {
+    return Response.json(
+      { error: "Der Aufgabengenerator ist für deinen Account nicht freigeschaltet." },
+      { status: 403 }
+    );
+  }
 
   let body: { ch?: unknown; focus?: unknown; avoid?: unknown };
   try {

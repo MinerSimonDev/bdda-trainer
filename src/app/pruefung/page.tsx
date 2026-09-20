@@ -1,8 +1,11 @@
 import { SiteHeader } from "@/components/site-header";
 import { ExamCases } from "@/components/exam-cases";
 import { ExamGenerator } from "@/components/exam-generator";
+import { mayGenerateExams } from "@/lib/exam-access";
 
-export default function PruefungPage() {
+export default async function PruefungPage() {
+  const mayGenerate = await mayGenerateExams();
+
   return (
     <>
       <SiteHeader />
@@ -18,15 +21,16 @@ export default function PruefungPage() {
           </p>
         </div>
 
-        <ExamGenerator />
+        {mayGenerate ? <ExamGenerator /> : null}
 
-        <div className="mt-10 mb-6 border-t pt-8">
+        <div className={`mb-6 border-t pt-8 ${mayGenerate ? "mt-10" : ""}`}>
           <h2 className="text-lg font-semibold tracking-tight">
             Originale Beispielprüfungen
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Die zwei Angaben aus dem Unterricht, an denen sich der Generator
-            orientiert.
+            {mayGenerate
+              ? "Die zwei Angaben aus dem Unterricht, an denen sich der Generator orientiert."
+              : "Die zwei Angaben aus dem Unterricht."}
           </p>
         </div>
 
