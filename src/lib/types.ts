@@ -20,6 +20,8 @@ export type ExamPart = {
   level: string;
   q: string;
   a: string;
+  /** Folie unter /public/slides, die als Angabe-Grafik gezeigt wird */
+  img?: string;
 };
 
 export type ExamCase = {

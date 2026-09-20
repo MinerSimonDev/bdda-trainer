@@ -24,6 +24,13 @@ CAP-Dreieck oder die Sequenzdiagramme zu Dirty Read und Non Repeatable Read.
 **Prüfungssimulation** — die Beispielprüfungen im Format Reproduktion ·
 Transfer · Reflexion, mit ausformulierter Musterantwort zum Aufdecken.
 
+**Aufgabengenerator** — derselbe Aufbau, aber neu erzeugt: Pool 1–7 wählen,
+optional einen Schwerpunkt angeben, und Claude schreibt Problemstellung, die
+drei Aufgabenteile und die Musterantworten. Als Stilvorlage dienen die zwei
+Originalangaben, als Faktenbasis ausschließlich die Karten des gewählten Pools —
+erfunden wird nichts. Passt eine Folie zur Aufgabe, hängt sie als Angabe-Grafik
+darüber, so wie die Grafiken in den Originalen.
+
 ## Stack
 
 Next.js 16 (App Router) · shadcn/ui auf Base UI · Tailwind v4 · Clerk für die
@@ -66,7 +73,23 @@ npm run dev
 ```
 
 Benötigte Variablen: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
-`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`.
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` und für den
+Aufgabengenerator `ANTHROPIC_API_KEY` (console.anthropic.com). Ohne den
+Schlüssel läuft alles andere weiter, der Generator sagt es dir.
+
+## Der Generator
+
+`src/lib/exam-prompt.ts` baut Systemprompt, Nachricht und Schema,
+`src/lib/exam-generate.ts` schickt die Anfrage weg, `src/app/api/pruefung/route.ts`
+nimmt sie entgegen. Modell ist `gpt-5.5` über die Responses-API mit
+`reasoning.effort: "high"`, überschreibbar mit `OPENAI_MODEL`. Die Antwort kommt
+über Structured Outputs gegen ein Zod-Schema zurück, also nie als Fließtext, den
+man parsen müsste.
+
+Der Systemprompt — Formatregeln plus die zwei Originalangaben — steht vorne und
+ändert sich zwischen zwei Aufgaben nicht, den Rabatt für wiederholte Präfixe gibt
+es dadurch automatisch. Ein Durchlauf schickt je nach Pool rund 6.000 Token
+hinein, dauert 25 bis 35 Sekunden und kostet ein paar Cent.
 
 ## Die Karten
 

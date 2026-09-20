@@ -1,5 +1,6 @@
 import { SiteHeader } from "@/components/site-header";
 import { ExamCases } from "@/components/exam-cases";
+import { ExamGenerator } from "@/components/exam-generator";
 
 export default function PruefungPage() {
   return (
@@ -11,11 +12,24 @@ export default function PruefungPage() {
             Prüfungssimulation
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Originalaufgaben aus den Beispielprüfungen. Erst selbst formulieren —
-            laut, wie in der mündlichen Prüfung — dann die Musterantwort
-            aufdecken.
+            Aufgaben im Format Reproduktion · Transfer · Reflexion. Erst selbst
+            formulieren — laut, wie in der mündlichen Prüfung — dann die
+            Musterantwort aufdecken.
           </p>
         </div>
+
+        <ExamGenerator />
+
+        <div className="mt-10 mb-6 border-t pt-8">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Originale Beispielprüfungen
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Die zwei Angaben aus dem Unterricht, an denen sich der Generator
+            orientiert.
+          </p>
+        </div>
+
         <ExamCases />
       </main>
     </>
